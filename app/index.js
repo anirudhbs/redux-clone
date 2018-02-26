@@ -9,6 +9,39 @@ const initialState = {
   notes: {}
 }
 
+const validateAction = action => {
+  if (!action || typeof action !== 'object' || Array.isArray(action)) {
+    throw new Error('Action must be an object!')
+  }
+  if (typeof action.type === 'undefined') {
+    throw new Error('Action must have a type!')
+  }
+}
+
+const createStore = reducer => {
+  let state
+  const subscribers = []
+  const store = {
+    dispatch: action => {
+      validateAction(action)
+      state = reducer(state, action)
+      subscribers.forEach(handler => handler())
+    },
+    getState: () => state,
+    subscribe: handler => {
+      subscribers.push(handler)
+      return () => {
+        const index = subscribers.indexOf(handler)
+        if (index > 0) {
+          subscribers.splice(index, 1)
+        }
+      }
+    }
+  }
+  store.dispatch({type: '@@redux/INIT'})
+  return store
+}
+
 const reducer = (state = initialState, action) => {
   switch (action.type) {
     case CREATE_NOTE: {
@@ -26,7 +59,6 @@ const reducer = (state = initialState, action) => {
         }
       }
     }
-
     case UPDATE_NOTE: {
       const {id, content} = action
       const editedNote = {
@@ -35,7 +67,6 @@ const reducer = (state = initialState, action) => {
       }
       return {
         ...state,
-        nextNoteId: id + 1,
         notes: {
           ...state.notes,
           [id]: editedNote
@@ -47,17 +78,19 @@ const reducer = (state = initialState, action) => {
   }
 }
 
-const state0 = reducer(undefined, {
+const store = createStore(reducer)
+
+store.dispatch({
   type: CREATE_NOTE
 })
 
-const state1 = reducer(state0, {
+store.dispatch({
   type: UPDATE_NOTE,
   id: 1,
   content: 'California Love'
 })
 
 ReactDOM.render(
-  <pre>{JSON.stringify(state1, null, 2)}</pre>,
+  <pre>{JSON.stringify(store.getState(), null, 2)}</pre>,
   document.getElementById('app')
 )
