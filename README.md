@@ -1,4 +1,4 @@
-# redux-clone
+# Redux Clone
 
 A simple clone of Redux built from scratch
 
